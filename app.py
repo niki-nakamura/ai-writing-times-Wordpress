@@ -53,7 +53,7 @@ if st.button("記事を生成"):
     if not keyword.strip():
         st.warning("キーワードを入力してください。")
     else:
-        with st.spinner("記事を生成中 (deepseek-r1)..."):
+        with st.spinner("記事を生成中..."):
             try:
                 # systemメッセージ（方針設定）
                 system_msg = (

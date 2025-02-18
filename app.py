@@ -43,8 +43,8 @@ def call_deepseek_llm(system_msg: str, user_msg: str, max_tokens: int = 800) -> 
 # Streamlitアプリ本体
 # ----------------------------
 
-st.title("AI記事作成ツール (Scaleway deepseek-r1)")
-st.write("キーワードを入力すると、LLM(deepseek-r1)が記事の骨格やサンプル文章を生成します。")
+st.title("AI記事作成ツール")
+st.write("キーワードを入力すると、LLM（大規模言語モデル）が記事の骨格やサンプル文章を生成します。")
 
 # ユーザー入力欄
 keyword = st.text_input("キーワードまたはテーマを入力してください:")

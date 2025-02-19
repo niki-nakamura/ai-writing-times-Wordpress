@@ -1,45 +1,85 @@
 # -*- coding: utf-8 -*-
 import streamlit as st
-import openai  # 公式 OpenAI or scaleway-labs の openai を想定
+import requests
+import json
 
-st.title("AI記事作成ツール (Scaleway DeepSeek-R1)")
+# ▼ Scaleway (deepseek-r1) 用の設定
+SCW_API_KEY = st.secrets["DEEPSEEK_API_KEY"]  # secrets.toml or Streamlit CloudのSecretsから取得
 
-# 1) Secrets から APIキー取得
-SCW_API_KEY = st.secrets["DEEPSEEK_API_KEY"]
+# Scaleway LLM APIエンドポイント
+SCW_BASE_URL = "https://api.scaleway.ai/af81c82e-508d-4d91-ba6b-5d4a9e1bb8d5/v1"
+SCW_MODEL_NAME = "deepseek-r1"
 
-# 2) OpenAI(client) 形式で初期化
-openai.api_base = "https://api.scaleway.ai/af81c82e-508d-4d91-ba6b-5d4a9e1bb8d5/v1"
-openai.api_key = SCW_API_KEY   # これで "Authorization: Bearer ..." が自動付与される想定
+def call_deepseek_llm(system_msg: str, user_msg: str, max_tokens: int = 800) -> str:
+    """Scalewayのdeepseek-r1モデルを呼び出し、LLM応答を返す"""
+    url = f"{SCW_BASE_URL}/chat/completions"
+    payload = {
+        "model": SCW_MODEL_NAME,
+        "messages": [
+            {"role": "system", "content": system_msg},
+            {"role": "user", "content": user_msg},
+        ],
+        "max_tokens": max_tokens,
+        "temperature": 0.7,
+        "top_p": 0.95,
+        "presence_penalty": 0,
+        "stream": False,
+    }
+    headers = {
+        # UTF-8 指定を明示
+        "Content-Type": "application/json; charset=utf-8",
+        "Authorization": f"Bearer {SCW_API_KEY}",
+    }
 
-# 3) ユーザー入力
+    # JSONパラメータをUTF-8で送る
+    # requests.post(..., json=payload) でもOKですが、念のため ensure_ascii=False
+    try:
+        resp = requests.post(url,
+                             headers=headers,
+                             data=json.dumps(payload, ensure_ascii=False).encode("utf-8"))
+    except Exception as e:
+        return f"APIリクエストでエラーが発生: {e}"
+
+    if resp.status_code != 200:
+        return f"APIエラー: {resp.status_code} {resp.text}"
+
+    data = resp.json()
+    if not data.get("choices"):
+        return f"(LLM応答なし)\n{data}"
+
+    return data["choices"][0]["message"]["content"]
+
+# ----------------------------
+# Streamlitアプリ本体
+# ----------------------------
+
+st.title("AI記事作成ツール")
+st.write("キーワードを入力すると、LLM（大規模言語モデル）が記事の骨格やサンプル文章を生成します。")
+
+# ユーザー入力欄
 keyword = st.text_input("キーワードまたはテーマを入力してください:")
 
 if st.button("記事を生成"):
     if not keyword.strip():
         st.warning("キーワードを入力してください。")
     else:
-        with st.spinner("LLMを呼び出しています..."):
+        with st.spinner("記事を生成中..."):
             try:
-                # Playgroundのコード例にほぼ合わせる
-                response = openai.ChatCompletion.create(
-                    model="deepseek-r1",  # 必要なら "deepseek/deepseek-r1-distill-llama-8b:fp8"
-                    messages=[
-                        {"role": "system", "content": "You are a helpful assistant."},
-                        {
-                            "role": "user",
-                            "content": f"キーワード: {keyword}\n\n日本語でブログ記事を書いてください。"
-                        },
-                    ],
-                    max_tokens=512,
-                    temperature=0.6,
-                    top_p=0.95,
-                    presence_penalty=0,
-                    stream=False,
+                # systemメッセージ（方針設定）
+                system_msg = (
+                    "あなたは優秀なブログ記事ライターです。"
+                    "ユーザーが入力したキーワードをもとに、"
+                    "日本語で記事のアウトラインや簡易本文を提案してください。"
                 )
-                # 通常レスポンス(ストリーム=False)なら .choices[0].message.content にテキストが格納
-                text = response.choices[0].message.content
-                st.write("## 記事サンプル")
-                st.write(text)
+                # userメッセージ（実際のリクエスト内容）
+                user_msg = f"キーワード: {keyword}\n\n" \
+                           "上記テーマでブログ記事を書いてください。日本語で。"
+
+                # deepseek-r1で生成
+                result_text = call_deepseek_llm(system_msg, user_msg, max_tokens=800)
+
+                st.subheader("記事サンプル")
+                st.write(result_text)
 
             except Exception as e:
-                st.error(f"エラー: {e}")
+                st.error(f"エラーが発生しました: {e}")

@@ -1,0 +1,7 @@
+# Python標準の無視ファイル例（venvなど）
+__pycache__/
+*.pyc
+venv/
+
+# Streamlit secrets.toml (機密情報)
+.streamlit/secrets.toml

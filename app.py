@@ -1,8 +1,10 @@
+# -*- coding: utf-8 -*-
 import streamlit as st
 import requests
+import json
 
 # ▼ Scaleway (deepseek-r1) 用の設定
-SCW_API_KEY = st.secrets["DEEPSEEK_API_KEY"]  # 例: secrets.toml で {"DEEPSEEK_API_KEY": "XXXXXXX"}
+SCW_API_KEY = st.secrets["DEEPSEEK_API_KEY"]  # secrets.toml or Streamlit CloudのSecretsから取得
 
 # Scaleway LLM APIエンドポイント
 SCW_BASE_URL = "https://api.scaleway.ai/af81c82e-508d-4d91-ba6b-5d4a9e1bb8d5/v1"
@@ -24,11 +26,20 @@ def call_deepseek_llm(system_msg: str, user_msg: str, max_tokens: int = 800) -> 
         "stream": False,
     }
     headers = {
-        "Content-Type": "application/json",
+        # UTF-8 指定を明示
+        "Content-Type": "application/json; charset=utf-8",
         "Authorization": f"Bearer {SCW_API_KEY}",
     }
 
-    resp = requests.post(url, headers=headers, json=payload)
+    # JSONパラメータをUTF-8で送る
+    # requests.post(..., json=payload) でもOKですが、念のため ensure_ascii=False
+    try:
+        resp = requests.post(url,
+                             headers=headers,
+                             data=json.dumps(payload, ensure_ascii=False).encode("utf-8"))
+    except Exception as e:
+        return f"APIリクエストでエラーが発生: {e}"
+
     if resp.status_code != 200:
         return f"APIエラー: {resp.status_code} {resp.text}"
 
@@ -37,7 +48,6 @@ def call_deepseek_llm(system_msg: str, user_msg: str, max_tokens: int = 800) -> 
         return f"(LLM応答なし)\n{data}"
 
     return data["choices"][0]["message"]["content"]
-
 
 # ----------------------------
 # Streamlitアプリ本体

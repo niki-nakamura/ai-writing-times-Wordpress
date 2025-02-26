@@ -17,7 +17,8 @@ def generate_reader_needs(keyword):
     必ず日本語で出力してください。
     """
 
-    response = openai.ChatCompletion.create(
+    # 新しいライブラリの呼び出し方: openai.chat.completions.create
+    response = openai.chat.completions.create(
         model="gpt-3.5-turbo",  # DeepSeek環境で利用できるモデルへ適宜置き換え
         messages=[
             {"role": "user", "content": prompt}

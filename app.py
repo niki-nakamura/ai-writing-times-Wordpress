@@ -2,9 +2,9 @@ import streamlit as st
 import openai
 import os
 
-# シークレットや環境変数からAPIキーを読み込む
-openai.api_key = os.environ.get("DEEPSEEK_API_KEY")
-openai.api_base = "https://api.deepseek.com/v1"  # DeepSeek APIエンドポイント
+# いったん削除・またはコメントアウト:
+# openai.api_key = os.environ.get("DEEPSEEK_API_KEY")
+openai.api_base = "https://api.deepseek.com/v1"
 
 def generate_reader_needs(keyword):
     """
@@ -18,16 +18,12 @@ def generate_reader_needs(keyword):
     """
 
     # 新しいライブラリの呼び出し方: openai.chat.completions.create
-    response = openai.chat.completions.create(
-        model="gpt-3.5-turbo",  # DeepSeek環境で利用できるモデルへ適宜置き換え
-        messages=[
-            {"role": "user", "content": prompt}
-        ],
+     response = openai.chat.completions.create(
+        model="gpt-3.5-turbo",
+        messages=[{"role": "user", "content": prompt}],
         max_tokens=300,
         temperature=0.7,
     )
-
-    # 応答テキストを抽出
     return response.choices[0].message["content"]
 
 def main():

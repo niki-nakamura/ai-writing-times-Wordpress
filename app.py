@@ -2,10 +2,13 @@ import streamlit as st
 import openai
 import os
 
-# openai.api_key の行は削除、api_baseだけ設定
+# openai.api_key の行は削除し、api_base だけ設定
 openai.api_base = "https://api.deepseek.com/v1"
 
 def generate_reader_needs(keyword):
+    """
+    入力されたKWに対して、読者ニーズのみをまとめてLLMから生成する。
+    """
     prompt = f"以下のキーワード「{keyword}」に興味を持つ読者が..."
     response = openai.chat.completions.create(
         model="gpt-3.5-turbo",
